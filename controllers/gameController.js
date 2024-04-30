@@ -1,12 +1,17 @@
 const Game = require('../models/gameModel');
 
+
 exports.startNewGame = async (req, res) => {
     try {
+        // generate secect code first. necessary since async and cannot pass promise directly to secretCode
+        const secretCode = await generateSecretCode();
+
         // Create a new game
         const newGame = await Game.create({
-            userId: req.session.userId, // get user ID
-            secretCode: generateSecretCode(), // Function to generate a random secret code
-            guesses: [], // string array of past guessees
+            userId: req.session.passport.user,
+            secretCode: secretCode, // Function to generate a random secret code
+            board: intializeBoard(),
+            feedback: [], // string array of past guessees
             turnCount: 1
             
         });
@@ -47,16 +52,27 @@ async function generateSecretCode() {
         const data = await response.text();
 
         // Parse the response and split by number
-        const generatedNumber = parseInt(data.trim().split('\n'));
+        const generatedNumber = data.trim().split('\n').map(Number);
+
         console.log("Generated number:", generatedNumber);
         
         // convert string array into integer array
-        const asNum = generatedNumber.map(numberString => parseInt(numberString));
-        return asNum;
+        
+        return generatedNumber;
 
     } catch (error) {
         console.error(error);
     }
+}
+
+function intializeBoard() {
+    const row = 10;
+    const col = 4; 
+    const board = new Array(row);
+    for (let i = 0; i < row; i++) {
+        board[i] = new Array(col).fill('#');
+    }
+    return board;
 }
 
 
