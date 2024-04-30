@@ -82,7 +82,8 @@ exports.getSignup = (req, res) => {
   res.render("register", {user: req.user, errors:[]});
 };
 
-exports.postSignup = (req, res, next) => {
+exports.postSignup = async (req, res, next) => {
+  //validation logic
   const validationErrors = [];
   if (!validator.isEmail(req.body.email))
     validationErrors.push({ msg: "Please enter a valid email address." });
@@ -110,31 +111,40 @@ exports.postSignup = (req, res, next) => {
     password: req.body.password,
   });
 
-  User.findOne(
-    { $or: [{ email: req.body.email }, { userName: req.body.userName }] },
-    (err, existingUser) => {
+  try {
+    // Check if user with email or username already exists
+    const existingUser = await User.findOne({
+      $or: [{ email: req.body.email }, { userName: req.body.userName }],
+    });
+  
+    if (existingUser) {
+      validationErrors.push({
+        msg: "Account with that email address or username already exists.",
+      });
+      // Render register page with errors
+      return res.render("register", { errors: validationErrors, user: req.user });
+    }
+  
+    // Create a new user instance
+    const user = new User({
+      userName: req.body.userName,
+      email: req.body.email,
+      password: req.body.password,
+    });
+  
+    // Save the new user
+    await user.save();
+  
+    // Log in the new user
+    req.logIn(user, (err) => {
       if (err) {
         return next(err);
       }
-      if (existingUser) {
-        req.flash("errors", {
-          msg: "Account with that email address or username already exists.",
-        });
-        validationErrors.push({msg: "Account with that email address or username already exists."});
-        console.log('existing user')
-        return res.render("register", {errors: validationErrors, user: req.user});
-      }
-      user.save((err) => {
-        if (err) {
-          return next(err);
-        }
-        req.logIn(user, (err) => {
-          if (err) {
-            return next(err);
-          }
-          res.redirect("/");
-        });
-      });
-    }
-  );
+      res.redirect("/");
+    });
+  } catch (err) {
+    // Handle errors
+    next(err);
+  }
+  
 };
