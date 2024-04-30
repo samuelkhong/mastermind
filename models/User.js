@@ -30,13 +30,32 @@ UserSchema.pre("save", function save(next) {
 
 // Helper method for validating user's password.
 
-UserSchema.methods.comparePassword = function comparePassword(
-  candidatePassword,
-  cb
-) {
+UserSchema.methods.comparePassword = function comparePassword(candidatePassword, cb) {
+  // Check if a callback function is provided
+  if (cb && typeof cb !== 'function') {
+    throw new Error('Callback function must be a function.');
+  }
+
+  // Return a promise if no callback is provided
+  if (!cb) {
+    return new Promise((resolve, reject) => {
+      bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(isMatch);
+      });
+    });
+  }
+
+  // Use the provided callback function
   bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
-    cb(err, isMatch);
+    if (err) {
+      return cb(err);
+    }
+    cb(null, isMatch);
   });
 };
+
 
 module.exports = mongoose.model("User", UserSchema);
