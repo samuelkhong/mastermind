@@ -10,6 +10,7 @@ const logger = require("morgan");
 
 const homeRoutes = require('./routes/home');
 const authenticateRoutes = require('./routes/authenticate')
+const gameRoutes = require('./routes/gameRoute')
 
 // used to access .env file
 require('dotenv').config({path: './config/.env'});
@@ -61,6 +62,7 @@ app.use(logger("dev"));
 
 // setup routes server is listening to
 app.use('/', homeRoutes);
+app.use('/game', gameRoutes )
 app.use('/authenticate', authenticateRoutes );
 
 //  check if connected to DB before starting our server

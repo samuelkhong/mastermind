@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind</title>
+</head>
+<body>
+    <h1>Mastermind</h1>
+    <form action="/game/newGame" method="post">
+        <button type="submit">Start New Game</button>
+    </form>
+    
+    <form action="/loadGame" method="post">
+        <input type="text" name="gameId" placeholder="Enter Game ID">
+        <button type="submit">Load Game</button>
+    </form>
+</body>
+</html>
