@@ -97,10 +97,19 @@ exports.updateGame = async (req, res) => {
             return res.status(404).json({ error: 'Game not found' });
         }
 
-        
-
-    
         res.status(200).json({ message: 'Guesses submitted successfully.' });
+
+        // Concatonate Guesses into an array
+        const guessArr = [guess1, guess2, guess3, guess4];
+
+        // initalize feedback 
+        let feedback = {
+            exactMatches:0,
+            partialMatches: 0
+        };
+
+        // compare guessArr to Secret code and fill feedback
+        getFeedback(guessArr, game.secretCode, feedback);
 
     }
     catch (error) {
@@ -108,14 +117,43 @@ exports.updateGame = async (req, res) => {
     }
 }
 
-function getExactMatches() {
+// calc the num of correct locations/ num and number of correct
+function getFeedback(guessArr, secretCodeArr, feedback) {
+    let correctNumLoc = 0;
+    let correctNumOnly = 0;
 
+    // keep track of matching indexes
+    const guessIndexMatch = new Set();
+    const secectIndexMatch = new Set();
+
+    // find correct num and location and update matching indexes
+    for (let i = 0; i < guessArr.length; i++) {
+        if (guessArr[i] === secretCodeArr[i]) {
+            correctNumLoc++;
+            guessIndexMatch.add(i);
+            secectIndexMatch.add(i);
+        }
+    }
+
+    // find match number but not at right position
+    for (let i = 0; i < guessArr.length; i++) { 
+        // skip indexes where match num and location. Avoid double count
+        if (guessIndexMatch.has(i)) {
+            continue;
+        }
+        // find first occurance of matching num not in correct pos
+        const secretCodeIndex = secretCodeArr.indexOf(guessArr[i]); // find the first occurance of the value at guessArr[i] in secret Arr
+        if (secretCodeIndex !== -1 && !secectIndexMatch.has(secretCodeIndex)) { // see if secrect index has bene prev mathced
+            correctNumOnly++;
+            secectIndexMatch.add(secretCodeIndex);
+        }
+
+        // update feedback object
+        feedback.exactMatches = correctNumLoc;
+        feedback.partialMatches = correctNumLoc + correctNumOnly
+
+    }
 }
-
-function getPartialMatches() {
-    
-}
-
 
 
 // gets an array of numbers used as mastermind code
