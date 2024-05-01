@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <h1>Mastermind</h1>
+    <form action="/game/newGame" method="post">
+        <label for="difficulty">Select Difficulty:</label>
+        <select name="difficulty" id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+        <button type="submit">Start New Game</button>
+    </form>
+    
+    <form action="/game/loadGame" method="post">
+        <input type="text" name="gameId" placeholder="Enter Game ID">
+        <button type="submit">Load Game</button>
+    </form>
+
+    <div> Previous Games
+        <% if (games && games.length > 0) { %>
+            <% games.forEach(game => { %>
+                <div>
+                    <%= game._id %>
+                    <%= game.status %>
+                    <%= game.difficulty %> 
+                
+                </div>
+            <% }); %>
+        <% } %>
+    </div>
+    
+</body>
+</html>

@@ -1,31 +1,246 @@
 const Game = require('../models/gameModel');
 
+exports.getGamesHome = async (req, res) => {
+    const user = req.user._id;
+    // find all games from that user.
+    const games = await Game.find({ userId: user }).exec();
+    res.render('gameSelection.ejs', {games, user: req.user });
+
+
+
+}
+
 exports.startNewGame = async (req, res) => {
     try {
+        // generate secect code first. necessary since async and cannot pass promise directly to secretCode
+        const difficulty = req.body.difficulty;
+        const secretCode = await generateSecretCode(difficulty);
+        
+
         // Create a new game
         const newGame = await Game.create({
-            userId: req.session.userId, // get user ID
-            secretCode: generateSecretCode(), // Function to generate a random secret code
-            guesses: [], // string array of past guessees
-            turnCount: 1
-            
+            userId: req.session.passport.user,
+            secretCode: secretCode, // Function to generate a random secret code
+            difficulty: difficulty,
+            board: intializeBoard(difficulty)
         });
-        res.json({ message: 'New Game.', gameId: newGame._id });
+        res.redirect(`/game/${newGame._id}`);
     } catch (error) {
         console.error('Cannot Create a new Game:', error);
         res.status(500).json({ error: 'Failed to create a new game.' });
     }
 };
 
+exports.redirectGame = async (req, res) => {
+    try {
+        // get id from post req 
+        const gameId = req.body.gameId.trim();
+
+        // Find the game by gameId
+        const game = await Game.findById(gameId);
+
+        // Check if game exists
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+        
+        // if game exist, route to url with id in the url 
+        res.redirect(`/game/${gameId}`);
+
+
+ 
+    } catch (error) {
+        console.error('Error loading game:', error);
+        res.status(500).json({ error: 'Failed to load game' });
+    }
+}
+
+exports.loadGame = async (req, res) => {
+    // get id from url 
+        const gameId = req.params.id;
+        // Find the game by gameId
+        const game = await Game.findById(gameId);
+        
+        // Check if game exists
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        // Render game with game info
+        res.render(`game`, {game, user: req.user });
+        
+
+}
+
+// updates the board
+exports.updateGame = async (req, res) => {
+    try {
+
+        // Get the gameId from the URL parameters
+        const gameId = req.body.gameId;
+
+        // Find the game by gameId
+        const game = await Game.findById(gameId);
+
+        // Check if game exists
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+        // check if exceeded the max turns
+        if (game.turnCount >= 10) {
+            // make sure game state is set to loss
+            game.status = 'lost';
+            await game.save();
+            res.redirect(`/game/${game._id}`);
+        }
+
+        // get guesses based on difficulty
+        let guesses = [];
+        switch (game.difficulty) {
+            case 'easy':
+                guesses = [1, 2, 3, 4];
+                break;
+            case 'medium':
+                guesses = [1, 2, 3, 4, 5, 6 ];
+                break;
+            case 'hard':
+                guesses = [1, 2, 3, 4, 5, 6, 7, 8];
+                break;
+            default:
+                guesses = [1, 2, 3, 4];
+                break;
+        }
+        // Get guesses from form submission and validate
+        const guessValues = guesses.map(guessNumber => Number(req.body[`guess${guessNumber}`]));
+        if (!isValidInput(guessValues)) {
+            return res.status(400).json({ error: 'Invalid guess. Guesses must be integers between 0 and 7.' });
+
+        };
+
+        // initalize feedback 
+        let feedback = {
+            exactMatches:0,
+            partialMatches: 0
+        };
+
+        // compare guessArr to Secret code and fill feedback
+        getFeedback(guessValues, game.secretCode, feedback); 
+
+        // convert feedback into String message
+        const feedbackStr = feedbackToString(feedback);
+        // add feedback to feedback arr in game
+        game.feedback[10 - game.turnCount] = feedbackStr;
+
+        // update the board
+        updateBoard(game.board, guessValues, game.turnCount);
+
+        // check if you won!
+        if (checkWin(feedback, game.secretCode)) {
+            // change game state to win!
+            game.status = 'won';
+        }
+        else {
+            //increment turn
+            game.turnCount++;
+
+        }
+        //save game
+        await game.save();
+
+        //after saving game. redirect to post request to loadGame
+        res.redirect(`/game/${game._id}`);
+
+    }
+    catch (error) {
+
+    }
+}
+
+// validate form input 
+function isValidInput(guesses) {
+    // for every guess check if its true. If there is a false terminates early returns false
+    return guesses.every((guess) => {
+        return Number.isInteger(guess) && guess >= 0 && guess <= 7;
+    });
+    
+}
+
+// updates the board with guessArr values
+function updateBoard(board, guessArr, turn) {
+    board[10 - turn] = guessArr;
+}
+
+// converts feedback object to a string displayed on board
+function feedbackToString(feedback) {
+    if (feedback.exactMatches === 0 && feedback.partialMatches === 0) {
+        return "all incorrect"
+    }
+    return `${feedback.exactMatches + feedback.partialMatches} correct number and ${feedback.exactMatches} correct location`
+}
+
+
+// determine if win 
+function checkWin(feedback, secrectCodeArr) {
+    if (feedback.exactMatches === secrectCodeArr.length) {
+        return true;
+    }
+    return false;
+}
+
+
+// calc the num of correct locations/ num and number of correct
+function getFeedback(guessArr, secretCodeArr, feedback) {
+    let correctNumLoc = 0;
+    let correctNumOnly = 0;
+
+    // keep track of matching indexes
+    const guessIndexMatch = new Set();
+    const secectIndexMatch = new Set();
+
+    // find correct num and location and update matching indexes
+    for (let i = 0; i < guessArr.length; i++) {
+        if (guessArr[i] === secretCodeArr[i]) {
+            correctNumLoc++;
+            guessIndexMatch.add(i);
+            secectIndexMatch.add(i);
+        }
+    }
+
+    // find match number but not at right position
+    for (let i = 0; i < guessArr.length; i++) { 
+        // skip indexes where match num and location. Avoid double count
+        if (guessIndexMatch.has(i)) {
+            continue;
+        }
+        // find first occurance of matching num not in correct pos
+        const secretCodeIndex = secretCodeArr.indexOf(guessArr[i]); // find the first occurance of the value at guessArr[i] in secret Arr
+        if (secretCodeIndex !== -1 && !secectIndexMatch.has(secretCodeIndex)) { // see if secrect index has bene prev mathced
+            correctNumOnly++;
+            secectIndexMatch.add(secretCodeIndex);
+        }
+    }
+    // update feedback object
+    feedback.exactMatches = correctNumLoc;
+    feedback.partialMatches =  correctNumOnly;
+}
+
+
 // gets an array of numbers used as mastermind code
-async function generateSecretCode() {
+async function generateSecretCode(difficulty) {
+    let rowSize = 4;
+    if (difficulty === 'medium') {
+        rowSize = 6;
+    }
+    else if (difficulty === 'hard') {
+        rowSize = 8;
+    }
 
     const url = "https://www.random.org/integers";
 
     // fetch request settings
     const settings = new URLSearchParams({
         //params based on mastermind
-        num: 4,    
+        num: rowSize,    
         min: 0,    
         max: 7,   
         col: 1,    
@@ -47,16 +262,30 @@ async function generateSecretCode() {
         const data = await response.text();
 
         // Parse the response and split by number
-        const generatedNumber = parseInt(data.trim().split('\n'));
-        console.log("Generated number:", generatedNumber);
+        const generatedNumber = data.trim().split('\n').map(Number);
         
-        // convert string array into integer array
-        const asNum = generatedNumber.map(numberString => parseInt(numberString));
-        return asNum;
+        return generatedNumber;
 
     } catch (error) {
         console.error(error);
     }
+}
+// intializes board with empty #
+function intializeBoard(difficulty) {
+    const row = 10;
+    let col = 4;
+    // set difficulty
+    if (difficulty === 'medium') {
+        col = 6;
+    }
+    else if (difficulty === 'hard') {
+        col = 8;
+    }
+    const board = new Array(row);
+    for (let i = 0; i < row; i++) {
+        board[i] = new Array(col).fill('#');
+    }
+    return board;
 }
 
 

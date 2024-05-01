@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind Game</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <h1>Mastermind Game</h1>
+    <!-- only show secrect key if go is over ie loss or won -->
+    <% if (game.status !== 'ongoing') {%>
+        <h2>You <%= game.status %></h2>
+        <div>Secrect: <%= game.secretCode %></div>
+    <% } %>
+    <table>
+        <% game.board.forEach((row, rowIndex) => { %>
+            <tr>
+                <% row.forEach(cell => { %>
+                    <td><%= cell %></td>
+                <% }); %>
+                <td><%= game.feedback[rowIndex] %></td>                
+            </tr>
+        <% }); %>
+    </table>
+    
+    <!-- only show form if the game is ongoing-->
+    <% if (game.status === 'ongoing') {%>
+        <form id="guessForm" action="/game/guess" method="post">
+            <% let gameLength = 4; 
+            if (game.difficulty === 'medium') {
+                gameLength = 6;
+            } else if (game.difficulty === 'hard') {
+                gameLength = 8;
+            }
+            for (let i = 1; i <= gameLength; i++) { %>
+                <label for="guess<%= i %>">Guess <%= i %>:</label>
+                <input type="number" name="guess<%= i %>" id="guess<%= i %>" min="0" max="7" required>
+            <% } %>
+
+            <button type="submit">Submit Guess</button>
+        </form>
+    <% } %>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById("guessForm");
+            const gameIdInput = document.createElement("input");
+            gameIdInput.type = "hidden";
+            gameIdInput.name = "gameId";
+        
+            // get gameid from url
+            const gameId = window.location.pathname.split("/").pop(); // Get the last segment of the URL path
+        
+            gameIdInput.value = gameId; //set the value of the hidden input to the extracted game ID
+            form.appendChild(gameIdInput); 
+        });
+    </script>
+</body>
+</html>
