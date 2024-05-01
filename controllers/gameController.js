@@ -10,10 +10,10 @@ exports.startNewGame = async (req, res) => {
         const newGame = await Game.create({
             userId: req.session.passport.user,
             secretCode: secretCode, // Function to generate a random secret code
-            board: intializeBoard(),            
+            board: intializeBoard(),
+            difficulty: req.body.difficulty          
         });
         res.redirect(`/game/${newGame._id}`);
-        // res.json({ message: 'New Game.', gameId: newGame._id });
     } catch (error) {
         console.error('Cannot Create a new Game:', error);
         res.status(500).json({ error: 'Failed to create a new game.' });
@@ -147,6 +147,7 @@ function updateBoard(board, guessArr, turn) {
     board[10 - turn] = guessArr;
 }
 
+// converts feedback object to a string displayed on board
 function feedbackToString(feedback) {
     if (feedback.exactMatches === 0 && feedback.partialMatches === 0) {
         return "all incorrect"
@@ -161,8 +162,6 @@ function checkWin(feedback, secrectCodeArr) {
         return true;
     }
     return false;
-
-
 }
 
 
