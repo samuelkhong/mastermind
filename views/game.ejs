@@ -1,0 +1,37 @@
+<!-- game.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind Game</title>
+</head>
+<body>
+    <h1>Mastermind Game</h1>
+    <table>
+        <% game.board.forEach(row => { %>
+            <tr>
+                <% row.forEach(cell => { %>
+                    <td><%= cell %></td>
+                <% }); %>
+            </tr>
+        <% }); %>
+    </table>
+
+    <form action="/game/guess" method="post">
+        <label for="guess1">Guess 1:</label>
+        <input type="number" name="guess1" id="guess1" min="0" max="7" required>
+        
+        <label for="guess2">Guess 2:</label>
+        <input type="number" name="guess2" id="guess2" min="0" max="7" required>
+        
+        <label for="guess3">Guess 3:</label>
+        <input type="number" name="guess3" id="guess3" min="0" max="7" required>
+        
+        <label for="guess4">Guess 4:</label>
+        <input type="number" name="guess4" id="guess4" min="0" max="7" required>
+
+        <button type="submit">Submit Guess</button>
+    </form>
+</body>
+</html>

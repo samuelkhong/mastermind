@@ -22,6 +22,102 @@ exports.startNewGame = async (req, res) => {
     }
 };
 
+exports.redirectGame = async (req, res) => {
+    try {
+        // get id from post req 
+        console.log(req.body)
+        const gameId = req.body.gameId;
+
+        // Find the game by gameId
+        const game = await Game.findById(gameId);
+
+        // Check if game exists
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+        
+        // if game exist, route to url with id in the url 
+        res.redirect(`/game/${gameId}`);
+
+
+ 
+    } catch (error) {
+        console.error('Error loading game:', error);
+        res.status(500).json({ error: 'Failed to load game' });
+    }
+}
+
+exports.loadGame = async (req, res) => {
+    // get id from url 
+        const gameId = req.params.id;
+        
+
+        // Find the game by gameId
+        const game = await Game.findById(gameId);
+        
+        // Check if game exists
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        // Render game with game info
+        res.render(`game`, {game});
+        
+
+}
+
+// updates the board
+exports.updateGame = async (req, res) => {
+    try {
+        // get guesses from form submisson and validate
+        const guess1 = Number(req.body.guess1);
+        const guess2 = Number(req.body.guess2);
+        const guess3 = Number(req.body.guess3);
+        const guess4 = Number(req.body.guess4);
+        
+        const isValid = (guess) => {
+            return Number.isInteger(guess) && guess >= 0 && guess <= 7;
+        }
+        // check if any of the guesses are not valid. 
+        if (!isValid(guess1) ||
+            !isValid(guess2) ||
+            !isValid(guess3) ||
+            !isValid(guess4)) {
+                return res.status(400).json({ error: 'Invalid guess. Guesses must be integers between 0 and 7.' });
+            }
+
+        // Get the gameId from the URL parameters
+        const gameId = req.params.id;
+
+        // Find the game by gameId
+        const game = await Game.findById(gameId);
+
+        // Check if game exists
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        
+
+    
+        res.status(200).json({ message: 'Guesses submitted successfully.' });
+
+    }
+    catch (error) {
+
+    }
+}
+
+function getExactMatches() {
+
+}
+
+function getPartialMatches() {
+    
+}
+
+
+
 // gets an array of numbers used as mastermind code
 async function generateSecretCode() {
 
