@@ -14,7 +14,7 @@ Before you begin, ensure you have the following installed on your machine:
 To get started, clone the Mastermind repository from GitHub:
 
 ```bash
-git clone https://github.com/your-username/mastermind.git
+git clone https://github.com/samuelkhong/mastermind.git
 ```
 
 Once cloned, navigate to the project directory:
