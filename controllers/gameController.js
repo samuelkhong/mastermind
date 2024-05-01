@@ -1,5 +1,14 @@
 const Game = require('../models/gameModel');
 
+exports.getGamesHome = async (req, res) => {
+    const user = req.user._id;
+    // find all games from that user.
+    const games = await Game.find({ userId: user }).exec();
+    res.render('gameSelection.ejs', {games});
+
+
+
+}
 
 exports.startNewGame = async (req, res) => {
     try {
@@ -25,7 +34,7 @@ exports.startNewGame = async (req, res) => {
 exports.redirectGame = async (req, res) => {
     try {
         // get id from post req 
-        const gameId = req.body.gameId;
+        const gameId = req.body.gameId.trim();
 
         // Find the game by gameId
         const game = await Game.findById(gameId);

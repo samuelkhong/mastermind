@@ -21,5 +21,19 @@
         <input type="text" name="gameId" placeholder="Enter Game ID">
         <button type="submit">Load Game</button>
     </form>
+
+    <div> Previous Games
+        <% if (games && games.length > 0) { %>
+            <% games.forEach(game => { %>
+                <div>
+                    <%= game._id %>
+                    <%= game.status %>
+                    <%= game.difficulty %> 
+                
+                </div>
+            <% }); %>
+        <% } %>
+    </div>
+    
 </body>
 </html>
