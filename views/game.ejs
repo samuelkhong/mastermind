@@ -26,17 +26,16 @@
     <!-- only show form if the game is ongoing-->
     <% if (game.status === 'ongoing') {%>
         <form id="guessForm" action="/game/guess" method="post">
-            <label for="guess1">Guess 1:</label>
-            <input type="number" name="guess1" id="guess1" min="0" max="7" required>
-            
-            <label for="guess2">Guess 2:</label>
-            <input type="number" name="guess2" id="guess2" min="0" max="7" required>
-            
-            <label for="guess3">Guess 3:</label>
-            <input type="number" name="guess3" id="guess3" min="0" max="7" required>
-            
-            <label for="guess4">Guess 4:</label>
-            <input type="number" name="guess4" id="guess4" min="0" max="7" required>
+            <% let gameLength = 4; 
+            if (game.difficulty === 'medium') {
+                gameLength = 6;
+            } else if (game.difficulty === 'hard') {
+                gameLength = 8;
+            }
+            for (let i = 1; i <= gameLength; i++) { %>
+                <label for="guess<%= i %>">Guess <%= i %>:</label>
+                <input type="number" name="guess<%= i %>" id="guess<%= i %>" min="0" max="7" required>
+            <% } %>
 
             <button type="submit">Submit Guess</button>
         </form>

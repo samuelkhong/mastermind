@@ -4,8 +4,9 @@ const Game = require('../models/gameModel');
 exports.startNewGame = async (req, res) => {
     try {
         // generate secect code first. necessary since async and cannot pass promise directly to secretCode
-        const secretCode = await generateSecretCode();
         const difficulty = req.body.difficulty;
+        const secretCode = await generateSecretCode(difficulty);
+        
 
         // Create a new game
         const newGame = await Game.create({
@@ -24,7 +25,6 @@ exports.startNewGame = async (req, res) => {
 exports.redirectGame = async (req, res) => {
     try {
         // get id from post req 
-        // console.log(req.body)
         const gameId = req.body.gameId;
 
         // Find the game by gameId
@@ -66,22 +66,6 @@ exports.loadGame = async (req, res) => {
 // updates the board
 exports.updateGame = async (req, res) => {
     try {
-        // // get guesses from form submisson and validate
-        // const guess1 = Number(req.body.guess1);
-        // const guess2 = Number(req.body.guess2);
-        // const guess3 = Number(req.body.guess3);
-        // const guess4 = Number(req.body.guess4);
-        
-        // const isValid = (guess) => {
-        //     return Number.isInteger(guess) && guess >= 0 && guess <= 7;
-        // }
-        // // check if any of the guesses are not valid. 
-        // if (!isValid(guess1) ||
-        //     !isValid(guess2) ||
-        //     !isValid(guess3) ||
-        //     !isValid(guess4)) {
-        //         return res.status(400).json({ error: 'Invalid guess. Guesses must be integers between 0 and 7.' });
-        //     }
 
         // Get the gameId from the URL parameters
         const gameId = req.body.gameId;
@@ -123,10 +107,6 @@ exports.updateGame = async (req, res) => {
             return res.status(400).json({ error: 'Invalid guess. Guesses must be integers between 0 and 7.' });
 
         };
-
-
-        // Concatonate Guesses into an array
-        // const guessArr = [guess1, guess2, guess3, guess4];
 
         // initalize feedback 
         let feedback = {
@@ -237,14 +217,21 @@ function getFeedback(guessArr, secretCodeArr, feedback) {
 
 
 // gets an array of numbers used as mastermind code
-async function generateSecretCode() {
+async function generateSecretCode(difficulty) {
+    let rowSize = 4;
+    if (difficulty === 'medium') {
+        rowSize = 6;
+    }
+    else if (difficulty === 'hard') {
+        rowSize = 8;
+    }
 
     const url = "https://www.random.org/integers";
 
     // fetch request settings
     const settings = new URLSearchParams({
         //params based on mastermind
-        num: 4,    
+        num: rowSize,    
         min: 0,    
         max: 7,   
         col: 1,    
