@@ -10,12 +10,10 @@ exports.startNewGame = async (req, res) => {
         const newGame = await Game.create({
             userId: req.session.passport.user,
             secretCode: secretCode, // Function to generate a random secret code
-            board: intializeBoard(),
-            feedback: [], // string array of past guessees
-            turnCount: 1
-            
+            board: intializeBoard(),            
         });
-        res.json({ message: 'New Game.', gameId: newGame._id });
+        res.redirect(`/game/${newGame._id}`);
+        // res.json({ message: 'New Game.', gameId: newGame._id });
     } catch (error) {
         console.error('Cannot Create a new Game:', error);
         res.status(500).json({ error: 'Failed to create a new game.' });
@@ -25,7 +23,7 @@ exports.startNewGame = async (req, res) => {
 exports.redirectGame = async (req, res) => {
     try {
         // get id from post req 
-        console.log(req.body)
+        // console.log(req.body)
         const gameId = req.body.gameId;
 
         // Find the game by gameId
@@ -50,8 +48,6 @@ exports.redirectGame = async (req, res) => {
 exports.loadGame = async (req, res) => {
     // get id from url 
         const gameId = req.params.id;
-        
-
         // Find the game by gameId
         const game = await Game.findById(gameId);
         
@@ -87,7 +83,7 @@ exports.updateGame = async (req, res) => {
             }
 
         // Get the gameId from the URL parameters
-        const gameId = req.params.id;
+        const gameId = req.body.gameId;
 
         // Find the game by gameId
         const game = await Game.findById(gameId);
@@ -96,8 +92,13 @@ exports.updateGame = async (req, res) => {
         if (!game) {
             return res.status(404).json({ error: 'Game not found' });
         }
-
-        res.status(200).json({ message: 'Guesses submitted successfully.' });
+        // check if exceeded the max turns
+        if (game.turnCount >= 10) {
+            // make sure game state is set to loss
+            game.status = 'lost';
+            await game.save();
+            res.redirect(`/game/${game._id}`);
+        }
 
         // Concatonate Guesses into an array
         const guessArr = [guess1, guess2, guess3, guess4];
@@ -109,13 +110,61 @@ exports.updateGame = async (req, res) => {
         };
 
         // compare guessArr to Secret code and fill feedback
-        getFeedback(guessArr, game.secretCode, feedback);
+        getFeedback(guessArr, game.secretCode, feedback); 
+
+        // convert feedback into String message
+        const feedbackStr = feedbackToString(feedback);
+        // add feedback to feedback arr in game
+        game.feedback[10 - game.turnCount] = feedbackStr;
+
+        // update the board
+        updateBoard(game.board, guessArr, game.turnCount);
+
+        // check if you won!
+        if (checkWin(feedback, game.secretCode)) {
+            // change game state to win!
+            game.status = 'won';
+        }
+        else {
+            //increment turn
+            game.turnCount++;
+
+        }
+        //save game
+        await game.save();
+
+        //after saving game. redirect to post request to loadGame
+        res.redirect(`/game/${game._id}`);
 
     }
     catch (error) {
 
     }
 }
+
+// updates the board with guessArr values
+function updateBoard(board, guessArr, turn) {
+    board[10 - turn] = guessArr;
+}
+
+function feedbackToString(feedback) {
+    if (feedback.exactMatches === 0 && feedback.partialMatches === 0) {
+        return "all incorrect"
+    }
+    return `${feedback.exactMatches + feedback.partialMatches} correct number and ${feedback.exactMatches} correct location`
+}
+
+
+// determine if win 
+function checkWin(feedback, secrectCodeArr) {
+    if (feedback.exactMatches === secrectCodeArr.length) {
+        return true;
+    }
+    return false;
+
+
+}
+
 
 // calc the num of correct locations/ num and number of correct
 function getFeedback(guessArr, secretCodeArr, feedback) {
@@ -147,12 +196,10 @@ function getFeedback(guessArr, secretCodeArr, feedback) {
             correctNumOnly++;
             secectIndexMatch.add(secretCodeIndex);
         }
-
-        // update feedback object
-        feedback.exactMatches = correctNumLoc;
-        feedback.partialMatches = correctNumLoc + correctNumOnly
-
     }
+    // update feedback object
+    feedback.exactMatches = correctNumLoc;
+    feedback.partialMatches =  correctNumOnly;
 }
 
 
@@ -187,10 +234,6 @@ async function generateSecretCode() {
 
         // Parse the response and split by number
         const generatedNumber = data.trim().split('\n').map(Number);
-
-        console.log("Generated number:", generatedNumber);
-        
-        // convert string array into integer array
         
         return generatedNumber;
 
