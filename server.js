@@ -31,7 +31,7 @@ connectDB()
 // Setup Sessions - stored in MongoDB
 app.use(
   session({
-    secret: 'linkedin challenge',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
