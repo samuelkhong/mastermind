@@ -34,7 +34,7 @@ npm install
 Mastermind uses environment variables for configuration. Create a `.env` file in the config directory of the project and add the following variables:
 
 ```makefile
-Port = 3000
+PORT=3000
 DB_STRING=your_mongodb_uri
 SESSION_SECRET=your_session_secret
 ```
