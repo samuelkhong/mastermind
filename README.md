@@ -2,6 +2,8 @@
 
 Welcome to the Mastermind deployment guide! This guide will walk you through the steps to deploy the Mastermind game locally using Node.js.
 
+live link here: https://mastermind-wpvf.onrender.com/
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your machine:
