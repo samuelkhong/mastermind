@@ -4,7 +4,7 @@ exports.getGamesHome = async (req, res) => {
     const user = req.user._id;
     // find all games from that user.
     const games = await Game.find({ userId: user }).exec();
-    res.render('gameSelection.ejs', {games});
+    res.render('gameSelection.ejs', {games, user: req.user });
 
 
 
@@ -67,7 +67,7 @@ exports.loadGame = async (req, res) => {
         }
 
         // Render game with game info
-        res.render(`game`, {game});
+        res.render(`game`, {game, user: req.user });
         
 
 }

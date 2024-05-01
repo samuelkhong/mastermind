@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mastermind</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
 </head>
 <body>
+    <%- include('partials/navbar') %>
     <h1>Mastermind</h1>
     <form action="/game/newGame" method="post">
         <label for="difficulty">Select Difficulty:</label>
