@@ -31,10 +31,11 @@ npm install
 
 ## Configuration
 
-Mastermind uses environment variables for configuration. Create a `.env` file in the root directory of the project and add the following variables:
+Mastermind uses environment variables for configuration. Create a `.env` file in the config directory of the project and add the following variables:
 
 ```makefile
-MONGODB_URI=your_mongodb_uri
+Port = 3000
+DB_STRING=your_mongodb_uri
 SESSION_SECRET=your_session_secret
 ```
 
