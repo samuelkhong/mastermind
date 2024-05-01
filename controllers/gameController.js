@@ -5,13 +5,14 @@ exports.startNewGame = async (req, res) => {
     try {
         // generate secect code first. necessary since async and cannot pass promise directly to secretCode
         const secretCode = await generateSecretCode();
+        const difficulty = req.body.difficulty;
 
         // Create a new game
         const newGame = await Game.create({
             userId: req.session.passport.user,
             secretCode: secretCode, // Function to generate a random secret code
-            board: intializeBoard(),
-            difficulty: req.body.difficulty          
+            difficulty: difficulty,
+            board: intializeBoard(difficulty)
         });
         res.redirect(`/game/${newGame._id}`);
     } catch (error) {
@@ -65,22 +66,22 @@ exports.loadGame = async (req, res) => {
 // updates the board
 exports.updateGame = async (req, res) => {
     try {
-        // get guesses from form submisson and validate
-        const guess1 = Number(req.body.guess1);
-        const guess2 = Number(req.body.guess2);
-        const guess3 = Number(req.body.guess3);
-        const guess4 = Number(req.body.guess4);
+        // // get guesses from form submisson and validate
+        // const guess1 = Number(req.body.guess1);
+        // const guess2 = Number(req.body.guess2);
+        // const guess3 = Number(req.body.guess3);
+        // const guess4 = Number(req.body.guess4);
         
-        const isValid = (guess) => {
-            return Number.isInteger(guess) && guess >= 0 && guess <= 7;
-        }
-        // check if any of the guesses are not valid. 
-        if (!isValid(guess1) ||
-            !isValid(guess2) ||
-            !isValid(guess3) ||
-            !isValid(guess4)) {
-                return res.status(400).json({ error: 'Invalid guess. Guesses must be integers between 0 and 7.' });
-            }
+        // const isValid = (guess) => {
+        //     return Number.isInteger(guess) && guess >= 0 && guess <= 7;
+        // }
+        // // check if any of the guesses are not valid. 
+        // if (!isValid(guess1) ||
+        //     !isValid(guess2) ||
+        //     !isValid(guess3) ||
+        //     !isValid(guess4)) {
+        //         return res.status(400).json({ error: 'Invalid guess. Guesses must be integers between 0 and 7.' });
+        //     }
 
         // Get the gameId from the URL parameters
         const gameId = req.body.gameId;
@@ -100,8 +101,32 @@ exports.updateGame = async (req, res) => {
             res.redirect(`/game/${game._id}`);
         }
 
+        // get guesses based on difficulty
+        let guesses = [];
+        switch (game.difficulty) {
+            case 'easy':
+                guesses = [1, 2, 3, 4];
+                break;
+            case 'medium':
+                guesses = [1, 2, 3, 4, 5, 6 ];
+                break;
+            case 'hard':
+                guesses = [1, 2, 3, 4, 5, 6, 7, 8];
+                break;
+            default:
+                guesses = [1, 2, 3, 4];
+                break;
+        }
+        // Get guesses from form submission and validate
+        const guessValues = guesses.map(guessNumber => Number(req.body[`guess${guessNumber}`]));
+        if (!isValidInput(guessValues)) {
+            return res.status(400).json({ error: 'Invalid guess. Guesses must be integers between 0 and 7.' });
+
+        };
+
+
         // Concatonate Guesses into an array
-        const guessArr = [guess1, guess2, guess3, guess4];
+        // const guessArr = [guess1, guess2, guess3, guess4];
 
         // initalize feedback 
         let feedback = {
@@ -110,7 +135,7 @@ exports.updateGame = async (req, res) => {
         };
 
         // compare guessArr to Secret code and fill feedback
-        getFeedback(guessArr, game.secretCode, feedback); 
+        getFeedback(guessValues, game.secretCode, feedback); 
 
         // convert feedback into String message
         const feedbackStr = feedbackToString(feedback);
@@ -118,7 +143,7 @@ exports.updateGame = async (req, res) => {
         game.feedback[10 - game.turnCount] = feedbackStr;
 
         // update the board
-        updateBoard(game.board, guessArr, game.turnCount);
+        updateBoard(game.board, guessValues, game.turnCount);
 
         // check if you won!
         if (checkWin(feedback, game.secretCode)) {
@@ -140,6 +165,15 @@ exports.updateGame = async (req, res) => {
     catch (error) {
 
     }
+}
+
+// validate form input 
+function isValidInput(guesses) {
+    // for every guess check if its true. If there is a false terminates early returns false
+    return guesses.every((guess) => {
+        return Number.isInteger(guess) && guess >= 0 && guess <= 7;
+    });
+    
 }
 
 // updates the board with guessArr values
@@ -240,10 +274,17 @@ async function generateSecretCode() {
         console.error(error);
     }
 }
-
-function intializeBoard() {
+// intializes board with empty #
+function intializeBoard(difficulty) {
     const row = 10;
-    const col = 4; 
+    let col = 4;
+    // set difficulty
+    if (difficulty === 'medium') {
+        col = 6;
+    }
+    else if (difficulty === 'hard') {
+        col = 8;
+    }
     const board = new Array(row);
     for (let i = 0; i < row; i++) {
         board[i] = new Array(col).fill('#');
